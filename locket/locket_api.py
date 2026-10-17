@@ -31,14 +31,14 @@ def _post_with_proxy(url, *, headers=None, json_body=None, data=None, timeout=20
             if data is not None:
                 kw["data"] = data
             resp = requests.post(url, **kw)
-            # Per-proxy health: 5xx counts as a proxy/upstream issue too.
+            # Per-proxy health: 403 (blocked by Locket) and 5xx count as issues
             if pid is not None:
-                if resp.status_code < 500:
+                if resp.status_code != 403 and resp.status_code < 500:
                     proxy_pool.mark_ok(pid)
                 else:
-                    proxy_pool.mark_err(pid, f"HTTP {resp.status_code}")
-            # Non-5xx → return immediately. 5xx → try next attempt.
-            if resp.status_code < 500 or pid is None:
+                    proxy_pool.mark_err(pid, f"HTTP {resp.status_code} (Blocked)" if resp.status_code == 403 else f"HTTP {resp.status_code}")
+            # Healthy non-5xx (and not 403) → return immediately. 5xx or 403 on a proxy → try next attempt.
+            if (resp.status_code < 500 and resp.status_code != 403) or pid is None:
                 return resp
         except Exception as e:
             last_exc = e

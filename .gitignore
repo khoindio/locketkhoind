@@ -1,0 +1,10 @@
+.env
+/__pycache__
+queue_state.json
+accounts.json
+tokens.json
+*.bak
+locket.db
+locket.db-wal
+locket.db-shm
+scratch/

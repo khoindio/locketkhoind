@@ -295,11 +295,12 @@ def proxies_test_one(proxy_id):
             proxies={"http": url, "https": url},
             timeout=15,
         )
-        ok = resp.status_code < 500
+        # 403 means this proxy is blocked by Locket/Google Cloud WAF
+        ok = resp.status_code not in (401, 403) and resp.status_code < 500
         if ok:
             proxy_pool.mark_ok(proxy_id)
         else:
-            proxy_pool.mark_err(proxy_id, f"HTTP {resp.status_code}")
+            proxy_pool.mark_err(proxy_id, f"HTTP {resp.status_code} (Blocked)" if resp.status_code == 403 else f"HTTP {resp.status_code}")
         return jsonify({"success": ok, "status": resp.status_code})
     except Exception as e:
         proxy_pool.mark_err(proxy_id, str(e)[:200])
